@@ -1,7 +1,7 @@
 const http = require("http");
 const mongoose = require("mongoose");
 const { wss } = require("./websocket/chat");
-require("dotenv").config(); // Add this to load .env
+require("dotenv").config();
 
 const server = http.createServer((req, res) => {
   res.writeHead(200);
@@ -10,7 +10,7 @@ const server = http.createServer((req, res) => {
 
 const connectDB = async () => {
   try {
-    console.log("MONGO_URI:", process.env.MONGO_URI); // Debug line
+    console.log("MONGO_URI:", process.env.MONGO_URI);
     if (!process.env.MONGO_URI) {
       throw new Error("MONGO_URI is not defined in .env");
     }
