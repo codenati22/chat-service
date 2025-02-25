@@ -1,5 +1,5 @@
 const WebSocket = require("ws");
-const Message = require("../models/Message");
+const Message = require("../models/message");
 const { verifyToken } = require("../utils/auth");
 
 const wss = new WebSocket.Server({ noServer: true });
