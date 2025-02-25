@@ -1,12 +1,23 @@
 const WebSocket = require("ws");
-const Message = require("../models/message");
+const Message = require("../models/Message");
+const { verifyToken } = require("../utils/auth");
 
 const wss = new WebSocket.Server({ noServer: true });
 const chats = new Map();
 
 wss.on("connection", (ws, req) => {
   const streamId = req.url.split("/")[1];
-  if (!streamId) {
+  const token = new URLSearchParams(req.url.split("?")[1]).get("token");
+
+  if (!streamId || !token) {
+    ws.close();
+    return;
+  }
+
+  try {
+    const user = verifyToken(token);
+    ws.user = user;
+  } catch (error) {
     ws.close();
     return;
   }
@@ -18,15 +29,19 @@ wss.on("connection", (ws, req) => {
 
   ws.on("message", async (message) => {
     const data = JSON.parse(message);
-    const { userId, content } = data;
+    const { content } = data;
 
-    const msg = new Message({ streamId, userId, content });
+    const msg = new Message({ streamId, userId: ws.user.id, content });
     await msg.save();
 
     chats.get(streamId).forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(
-          JSON.stringify({ user: userId, content, timestamp: msg.timestamp })
+          JSON.stringify({
+            user: ws.user.id,
+            content,
+            timestamp: msg.timestamp,
+          })
         );
       }
     });
