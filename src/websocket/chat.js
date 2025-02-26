@@ -1,6 +1,5 @@
 const WebSocket = require("ws");
-const Message = require("../models/message");
-const { verifyToken } = require("../utils/auth");
+const Message = require("../models/Message");
 
 const wss = new WebSocket.Server({ noServer: true });
 const chats = new Map();
@@ -15,6 +14,7 @@ wss.on("connection", (ws, req) => {
   }
 
   try {
+    const { verifyToken } = require("../utils/auth");
     const user = verifyToken(token);
     ws.user = user;
   } catch (error) {
@@ -31,25 +31,34 @@ wss.on("connection", (ws, req) => {
     const data = JSON.parse(message);
     const { content } = data;
 
-    const msg = new Message({ streamId, userId: ws.user.id, content });
-    await msg.save();
+    try {
+      const msg = new Message({ streamId, userId: ws.user.id, content });
+      await msg.save();
 
-    chats.get(streamId).forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(
-          JSON.stringify({
-            user: ws.user.id,
-            content,
-            timestamp: msg.timestamp,
-          })
-        );
+      const chat = chats.get(streamId);
+      if (chat) {
+        chat.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(
+              JSON.stringify({
+                user: ws.user.id,
+                content,
+                timestamp: msg.timestamp,
+              })
+            );
+          }
+        });
       }
-    });
+    } catch (error) {
+      console.error("Chat message error:", error);
+    }
   });
 
   ws.on("close", () => {
-    chats.get(streamId).delete(ws);
-    if (chats.get(streamId).size === 0) {
+    const chat = chats.get(streamId);
+    if (!chat) return;
+    chat.delete(ws);
+    if (chat.size === 0) {
       chats.delete(streamId);
     }
   });
