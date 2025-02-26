@@ -5,8 +5,10 @@ const wss = new WebSocket.Server({ noServer: true });
 const chats = new Map();
 
 wss.on("connection", (ws, req) => {
-  const streamId = req.url.split("/")[1];
-  const token = new URLSearchParams(req.url.split("?")[1]).get("token");
+  const urlParts = req.url.split("?");
+  const streamId = urlParts[0].split("/")[1];
+  const query = new URLSearchParams(urlParts[1]);
+  const token = query.get("token");
 
   if (!streamId || !token) {
     ws.close();
