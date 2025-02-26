@@ -1,5 +1,5 @@
 const WebSocket = require("ws");
-const Message = require("../models/Message");
+const Message = require("../models/message");
 
 const wss = new WebSocket.Server({ noServer: true });
 const chats = new Map();
